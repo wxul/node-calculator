@@ -12,6 +12,7 @@ import { InvalidExpressionException } from './errors';
 // Tx  ->  / F Tx
 // Tx  ->  null
 // F   ->  number
+// F   ->  -number
 // F   ->  (E)
 
 /**
@@ -114,6 +115,7 @@ export default function parser(tokens: Token[]) {
 
     /**
      * F   ->  number
+     * F   ->  -number
      * F   ->  (E)
      */
     function F() {
@@ -130,13 +132,25 @@ export default function parser(tokens: Token[]) {
             }
             token = next();
             return true;
-        } else if (token && /^[0-9]+(\.[0-9]+)?$/.test(token.value)) {
+        } else if (token && isNumberValue(token.value)) {
             p.children.push(Number(token.value));
+            token = next();
+            return true;
+        } else if (token && token.value === '-') {
+            token = next();
+            if (!isNumberValue(token.value)) {
+                throw new InvalidExpressionException(token?.value || '(none)');
+            }
+            p.children.push(0 - Number(token.value));
             token = next();
             return true;
         }
         // return false;
         throw new InvalidExpressionException(token?.value || '(none)');
+    }
+
+    function isNumberValue(num: string) {
+        return /^[0-9]+(\.[0-9]+)?$/.test(num);
     }
 }
 
